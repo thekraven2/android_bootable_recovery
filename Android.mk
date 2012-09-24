@@ -1,8 +1,16 @@
+ifneq ($(TARGET_SIMULATOR),true)
+ifeq ($(TARGET_ARCH),arm)
+
 LOCAL_PATH := $(call my-dir)
 include $(CLEAR_VARS)
 
 commands_recovery_local_path := $(LOCAL_PATH)
-# LOCAL_CPP_EXTENSION := .c
+LOCAL_CFLAGS += -DTW_NO_REBOOT_BOOTLOADER
+TARGET_RECOVERY_GUI := true
+
+LOCAL_MODULE := recovery
+
+LOCAL_C_INCLUDES += bionic external/stlport/stlport
 
 LOCAL_SRC_FILES := \
     recovery.c \
@@ -10,64 +18,117 @@ LOCAL_SRC_FILES := \
     install.c \
     roots.c \
     ui.c \
-    mounts.c \
-    extendedcommands.c \
-    nandroid.c \
-    ../../system/core/toolbox/reboot.c \
-    firmware.c \
-    edifyscripting.c \
-    setprop.c \
-    default_recovery_ui.c \
-    verifier.c
+    verifier.c \
+    encryptedfs_provisioning.c \
+    extra-functions.c \
+    ddftw.c \
+    backstore.c \
+    themes.c \
+    format.c \
+    data.cpp \
+    makelist.c \
+    firmware.c
 
-ADDITIONAL_RECOVERY_FILES := $(shell echo $$ADDITIONAL_RECOVERY_FILES)
-LOCAL_SRC_FILES += $(ADDITIONAL_RECOVERY_FILES)
-
-LOCAL_MODULE := recovery
-
-LOCAL_FORCE_STATIC_EXECUTABLE := true
-
-ifdef I_AM_KOUSH
-RECOVERY_NAME := ClockworkMod Recovery
-LOCAL_CFLAGS += -DI_AM_KOUSH
+ifeq ($(TARGET_RECOVERY_REBOOT_SRC),)
+  LOCAL_SRC_FILES += reboot.c
 else
-RECOVERY_NAME := CWM-based Recovery
+  LOCAL_SRC_FILES += $(TARGET_RECOVERY_REBOOT_SRC)
 endif
 
-RECOVERY_VERSION := $(RECOVERY_NAME) v6.0.1.2
-
-LOCAL_CFLAGS += -DRECOVERY_VERSION="$(RECOVERY_VERSION)"
 RECOVERY_API_VERSION := 2
 LOCAL_CFLAGS += -DRECOVERY_API_VERSION=$(RECOVERY_API_VERSION)
 
-ifdef BOARD_TOUCH_RECOVERY
-ifeq ($(BOARD_USE_CUSTOM_RECOVERY_FONT),)
-  BOARD_USE_CUSTOM_RECOVERY_FONT := \"roboto_15x24.h\"
-endif
+ifeq ($(BOARD_HAS_NO_REAL_SDCARD), true)
+    LOCAL_CFLAGS += -DBOARD_HAS_NO_REAL_SDCARD
 endif
 
-ifeq ($(BOARD_USE_CUSTOM_RECOVERY_FONT),)
-  BOARD_USE_CUSTOM_RECOVERY_FONT := \"font_10x18.h\"
+ifneq ($(SP1_NAME),)
+	LOCAL_CFLAGS += -DSP1_NAME=$(SP1_NAME) -DSP1_BACKUP_METHOD=$(SP1_BACKUP_METHOD) -DSP1_MOUNTABLE=$(SP1_MOUNTABLE)
 endif
-
-BOARD_RECOVERY_CHAR_WIDTH := $(shell echo $(BOARD_USE_CUSTOM_RECOVERY_FONT) | cut -d _  -f 2 | cut -d . -f 1 | cut -d x -f 1)
-BOARD_RECOVERY_CHAR_HEIGHT := $(shell echo $(BOARD_USE_CUSTOM_RECOVERY_FONT) | cut -d _  -f 2 | cut -d . -f 1 | cut -d x -f 2)
-
-LOCAL_CFLAGS += -DBOARD_RECOVERY_CHAR_WIDTH=$(BOARD_RECOVERY_CHAR_WIDTH) -DBOARD_RECOVERY_CHAR_HEIGHT=$(BOARD_RECOVERY_CHAR_HEIGHT)
-
-BOARD_RECOVERY_DEFINES := BOARD_HAS_NO_SELECT_BUTTON BOARD_UMS_LUNFILE BOARD_RECOVERY_ALWAYS_WIPES BOARD_RECOVERY_HANDLES_MOUNT BOARD_TOUCH_RECOVERY RECOVERY_EXTEND_NANDROID_MENU
-
-$(foreach board_define,$(BOARD_RECOVERY_DEFINES), \
-  $(if $($(board_define)), \
-    $(eval LOCAL_CFLAGS += -D$(board_define)=\"$($(board_define))\") \
-  ) \
-  )
-
-LOCAL_STATIC_LIBRARIES :=
-
-LOCAL_CFLAGS += -DUSE_EXT4
-LOCAL_C_INCLUDES += system/extras/ext4_utils
-LOCAL_STATIC_LIBRARIES += libext4_utils libz
+ifneq ($(SP1_DISPLAY_NAME),)
+	LOCAL_CFLAGS += -DSP1_DISPLAY_NAME=$(SP1_DISPLAY_NAME)
+endif
+ifneq ($(SP2_NAME),)
+	LOCAL_CFLAGS += -DSP2_NAME=$(SP2_NAME) -DSP2_BACKUP_METHOD=$(SP2_BACKUP_METHOD) -DSP2_MOUNTABLE=$(SP2_MOUNTABLE)
+endif
+ifneq ($(SP2_DISPLAY_NAME),)
+	LOCAL_CFLAGS += -DSP2_DISPLAY_NAME=$(SP2_DISPLAY_NAME)
+endif
+ifneq ($(SP3_NAME),)
+	LOCAL_CFLAGS += -DSP3_NAME=$(SP3_NAME) -DSP3_BACKUP_METHOD=$(SP3_BACKUP_METHOD) -DSP3_MOUNTABLE=$(SP3_MOUNTABLE)
+endif
+ifneq ($(SP3_DISPLAY_NAME),)
+	LOCAL_CFLAGS += -DSP3_DISPLAY_NAME=$(SP3_DISPLAY_NAME)
+endif
+ifneq ($(RECOVERY_SDCARD_ON_DATA),)
+	LOCAL_CFLAGS += -DRECOVERY_SDCARD_ON_DATA
+endif
+ifneq ($(TW_INCLUDE_DUMLOCK),)
+	LOCAL_CFLAGS += -DTW_INCLUDE_DUMLOCK
+endif
+ifneq ($(TW_INTERNAL_STORAGE_PATH),)
+	LOCAL_CFLAGS += -DTW_INTERNAL_STORAGE_PATH=$(TW_INTERNAL_STORAGE_PATH)
+endif
+ifneq ($(TW_INTERNAL_STORAGE_MOUNT_POINT),)
+	LOCAL_CFLAGS += -DTW_INTERNAL_STORAGE_MOUNT_POINT=$(TW_INTERNAL_STORAGE_MOUNT_POINT)
+endif
+ifneq ($(TW_EXTERNAL_STORAGE_PATH),)
+	LOCAL_CFLAGS += -DTW_EXTERNAL_STORAGE_PATH=$(TW_EXTERNAL_STORAGE_PATH)
+endif
+ifneq ($(TW_EXTERNAL_STORAGE_MOUNT_POINT),)
+	LOCAL_CFLAGS += -DTW_EXTERNAL_STORAGE_MOUNT_POINT=$(TW_EXTERNAL_STORAGE_MOUNT_POINT)
+endif
+ifeq ($(TW_HAS_NO_RECOVERY_PARTITION), true)
+    LOCAL_CFLAGS += -DTW_HAS_NO_RECOVERY_PARTITION
+endif
+ifeq ($(TW_NO_REBOOT_BOOTLOADER), true)
+    LOCAL_CFLAGS += -DTW_NO_REBOOT_BOOTLOADER
+endif
+ifeq ($(TW_NO_REBOOT_RECOVERY), true)
+    LOCAL_CFLAGS += -DTW_NO_REBOOT_RECOVERY
+endif
+ifeq ($(TW_NO_BATT_PERCENT), true)
+    LOCAL_CFLAGS += -DTW_NO_BATT_PERCENT
+endif
+ifneq ($(TW_CUSTOM_POWER_BUTTON),)
+	LOCAL_CFLAGS += -DTW_CUSTOM_POWER_BUTTON=$(TW_CUSTOM_POWER_BUTTON)
+endif
+ifeq ($(TW_ALWAYS_RMRF), true)
+    LOCAL_CFLAGS += -DTW_ALWAYS_RMRF
+endif
+ifeq ($(TW_NEVER_UNMOUNT_SYSTEM), true)
+    LOCAL_CFLAGS += -DTW_NEVER_UNMOUNT_SYSTEM
+endif
+ifeq ($(TW_NO_USB_STORAGE), true)
+    LOCAL_CFLAGS += -DTW_NO_USB_STORAGE
+endif
+ifeq ($(TW_INCLUDE_INJECTTWRP), true)
+    LOCAL_CFLAGS += -DTW_INCLUDE_INJECTTWRP
+endif
+ifeq ($(TW_INCLUDE_BLOBPACK), true)
+    LOCAL_CFLAGS += -DTW_INCLUDE_BLOBPACK
+endif
+ifeq ($(TW_DEFAULT_EXTERNAL_STORAGE), true)
+    LOCAL_CFLAGS += -DTW_DEFAULT_EXTERNAL_STORAGE
+endif
+ifneq ($(TARGET_USE_CUSTOM_LUN_FILE_PATH),)
+    LOCAL_CFLAGS += -DCUSTOM_LUN_FILE=\"$(TARGET_USE_CUSTOM_LUN_FILE_PATH)\"
+endif
+ifneq ($(BOARD_UMS_LUNFILE),)
+    LOCAL_CFLAGS += -DCUSTOM_LUN_FILE=\"$(BOARD_UMS_LUNFILE)\"
+endif
+#ifeq ($(TW_FLASH_FROM_STORAGE), true) Making this the default behavior
+    LOCAL_CFLAGS += -DTW_FLASH_FROM_STORAGE
+#endif
+ifeq ($(TW_HAS_DOWNLOAD_MODE), true)
+    LOCAL_CFLAGS += -DTW_HAS_DOWNLOAD_MODE
+endif
+ifeq ($(TW_SDEXT_NO_EXT4), true)
+    LOCAL_CFLAGS += -DTW_SDEXT_NO_EXT4
+endif
+ifeq ($(TW_FORCE_CPUINFO_FOR_DEVICE_ID), true)
+    LOCAL_CFLAGS += -DTW_FORCE_CPUINFO_FOR_DEVICE_ID
+endif
 
 # This binary is in the recovery ramdisk, which is otherwise a copy of root.
 # It gets copied there in config/Makefile.  LOCAL_MODULE_TAGS suppresses
@@ -76,71 +137,61 @@ LOCAL_STATIC_LIBRARIES += libext4_utils libz
 
 LOCAL_MODULE_TAGS := eng
 
-ifeq ($(BOARD_CUSTOM_RECOVERY_KEYMAPPING),)
-  LOCAL_SRC_FILES += default_recovery_keys.c
-else
-  LOCAL_SRC_FILES += $(BOARD_CUSTOM_RECOVERY_KEYMAPPING)
-endif
+LOCAL_STATIC_LIBRARIES :=
+LOCAL_SHARED_LIBRARIES :=
 
-LOCAL_STATIC_LIBRARIES += libext4_utils libz
 LOCAL_STATIC_LIBRARIES += libminzip libunz libmincrypt
+LOCAL_STATIC_LIBRARIES += libminuitwrp libpixelflinger_static libpng libjpegtwrp
+LOCAL_SHARED_LIBRARIES += libz libc libstlport libcutils libstdc++
+LOCAL_STATIC_LIBRARIES += libmtdutils
 
-LOCAL_STATIC_LIBRARIES += libminizip libedify libbusybox libmkyaffs2image libunyaffs liberase_image libdump_image libflash_image
-
-LOCAL_STATIC_LIBRARIES += libdedupe libcrypto libcrecovery libflashutils libmtdutils libmmcutils libbmlutils
-
-ifeq ($(BOARD_USES_BML_OVER_MTD),true)
-LOCAL_STATIC_LIBRARIES += libbml_over_mtd
+ifeq ($(TW_INCLUDE_CRYPTO), true)
+    LOCAL_CFLAGS += -DTW_INCLUDE_CRYPTO
+    LOCAL_CFLAGS += -DCRYPTO_FS_TYPE=\"$(TW_CRYPTO_FS_TYPE)\"
+    LOCAL_CFLAGS += -DCRYPTO_REAL_BLKDEV=\"$(TW_CRYPTO_REAL_BLKDEV)\"
+    LOCAL_CFLAGS += -DCRYPTO_MNT_POINT=\"$(TW_CRYPTO_MNT_POINT)\"
+    LOCAL_CFLAGS += -DCRYPTO_FS_OPTIONS=\"$(TW_CRYPTO_FS_OPTIONS)\"
+    LOCAL_CFLAGS += -DCRYPTO_FS_FLAGS=\"$(TW_CRYPTO_FS_FLAGS)\"
+    LOCAL_CFLAGS += -DCRYPTO_KEY_LOC=\"$(TW_CRYPTO_KEY_LOC)\"
+    LOCAL_SHARED_LIBRARIES += libcrypto
+    LOCAL_SRC_FILES += crypto/ics/cryptfs.c
+    LOCAL_C_INCLUDES += system/extras/ext4_utils external/openssl/include
+endif
+ifeq ($(TW_INCLUDE_JB_CRYPTO), true)
+    LOCAL_CFLAGS += -DTW_INCLUDE_CRYPTO
+    LOCAL_CFLAGS += -DTW_INCLUDE_JB_CRYPTO
+    LOCAL_SHARED_LIBRARIES += libcrypto
+    LOCAL_STATIC_LIBRARIES += libfs_mgrtwrp
+    LOCAL_SRC_FILES += crypto/jb/cryptfs.c
+    LOCAL_C_INCLUDES += system/extras/ext4_utils external/openssl/include
 endif
 
-LOCAL_STATIC_LIBRARIES += libminui libpixelflinger_static libpng libcutils
-LOCAL_STATIC_LIBRARIES += libstdc++ libc
+ifeq ($(TARGET_RECOVERY_UI_LIB),)
+  LOCAL_SRC_FILES += default_recovery_ui.c
+else
+  LOCAL_STATIC_LIBRARIES += $(TARGET_RECOVERY_UI_LIB)
+endif
 
-LOCAL_C_INCLUDES += system/extras/ext4_utils
+ifeq ($(TARGET_RECOVERY_GUI),true)
+  LOCAL_STATIC_LIBRARIES += libgui
+else
+  LOCAL_SRC_FILES += gui_stub.c
+endif
 
 include $(BUILD_EXECUTABLE)
 
-RECOVERY_LINKS := edify busybox flash_image dump_image mkyaffs2image unyaffs erase_image nandroid reboot volume setprop dedupe minizip
+#added for CM busybox
+#BUSYBOX_LINKS := $(shell cat external/busybox/busybox-minimal.links)
+#exclude := tune2fs mke2fs
+#RECOVERY_BUSYBOX_SYMLINKS := $(addprefix $(TARGET_RECOVERY_ROOT_OUT)/sbin/,$(filter-out $(exclude),$(notdir $(BUSYBOX_LINKS))))
+#$(RECOVERY_BUSYBOX_SYMLINKS): BUSYBOX_BINARY := busybox
+#$(RECOVERY_BUSYBOX_SYMLINKS): $(LOCAL_INSTALLED_MODULE)
+#@echo "Symlink: $@ -> $(BUSYBOX_BINARY)"
+#@mkdir -p $(dir $@)
+#@rm -rf $@
+#$(hide) ln -sf $(BUSYBOX_BINARY) $@
 
-# nc is provided by external/netcat
-RECOVERY_SYMLINKS := $(addprefix $(TARGET_RECOVERY_ROOT_OUT)/sbin/,$(RECOVERY_LINKS))
-$(RECOVERY_SYMLINKS): RECOVERY_BINARY := $(LOCAL_MODULE)
-$(RECOVERY_SYMLINKS): $(LOCAL_INSTALLED_MODULE)
-	@echo "Symlink: $@ -> $(RECOVERY_BINARY)"
-	@mkdir -p $(dir $@)
-	@rm -rf $@
-	$(hide) ln -sf $(RECOVERY_BINARY) $@
-
-ALL_DEFAULT_INSTALLED_MODULES += $(RECOVERY_SYMLINKS)
-
-# Now let's do recovery symlinks
-BUSYBOX_LINKS := $(shell cat external/busybox/busybox-minimal.links)
-exclude := tune2fs mke2fs
-RECOVERY_BUSYBOX_SYMLINKS := $(addprefix $(TARGET_RECOVERY_ROOT_OUT)/sbin/,$(filter-out $(exclude),$(notdir $(BUSYBOX_LINKS))))
-$(RECOVERY_BUSYBOX_SYMLINKS): BUSYBOX_BINARY := busybox
-$(RECOVERY_BUSYBOX_SYMLINKS): $(LOCAL_INSTALLED_MODULE)
-	@echo "Symlink: $@ -> $(BUSYBOX_BINARY)"
-	@mkdir -p $(dir $@)
-	@rm -rf $@
-	$(hide) ln -sf $(BUSYBOX_BINARY) $@
-
-ALL_DEFAULT_INSTALLED_MODULES += $(RECOVERY_BUSYBOX_SYMLINKS) 
-
-include $(CLEAR_VARS)
-LOCAL_MODULE := nandroid-md5.sh
-LOCAL_MODULE_TAGS := optional
-LOCAL_MODULE_CLASS := RECOVERY_EXECUTABLES
-LOCAL_MODULE_PATH := $(TARGET_RECOVERY_ROOT_OUT)/sbin
-LOCAL_SRC_FILES := nandroid-md5.sh
-include $(BUILD_PREBUILT)
-
-include $(CLEAR_VARS)
-LOCAL_MODULE := killrecovery.sh
-LOCAL_MODULE_TAGS := optional
-LOCAL_MODULE_CLASS := RECOVERY_EXECUTABLES
-LOCAL_MODULE_PATH := $(TARGET_RECOVERY_ROOT_OUT)/sbin
-LOCAL_SRC_FILES := killrecovery.sh
-include $(BUILD_PREBUILT)
+#ALL_DEFAULT_INSTALLED_MODULES += $(RECOVERY_BUSYBOX_SYMLINKS) 
 
 include $(CLEAR_VARS)
 
@@ -156,18 +207,36 @@ LOCAL_STATIC_LIBRARIES := libmincrypt libcutils libstdc++ libc
 
 include $(BUILD_EXECUTABLE)
 
-include $(commands_recovery_local_path)/bmlutils/Android.mk
-include $(commands_recovery_local_path)/dedupe/Android.mk
-include $(commands_recovery_local_path)/flashutils/Android.mk
-include $(commands_recovery_local_path)/libcrecovery/Android.mk
+include $(commands_recovery_local_path)/nonguiimages/Android.mk
+include $(commands_recovery_local_path)/libjpegtwrp/Android.mk
+include $(commands_recovery_local_path)/injecttwrp/Android.mk
+include $(commands_recovery_local_path)/blobpack/Android.mk
+include $(commands_recovery_local_path)/htcdumlock/Android.mk
 include $(commands_recovery_local_path)/minui/Android.mk
+include $(commands_recovery_local_path)/minuitwrp/Android.mk
 include $(commands_recovery_local_path)/minelf/Android.mk
+include $(commands_recovery_local_path)/gui/Android.mk
 include $(commands_recovery_local_path)/minzip/Android.mk
-include $(commands_recovery_local_path)/mtdutils/Android.mk
 include $(commands_recovery_local_path)/mmcutils/Android.mk
+include $(commands_recovery_local_path)/mtdutils/Android.mk
+include $(commands_recovery_local_path)/bmlutils/Android.mk
+include $(commands_recovery_local_path)/flashutils/Android.mk
 include $(commands_recovery_local_path)/tools/Android.mk
 include $(commands_recovery_local_path)/edify/Android.mk
+include $(commands_recovery_local_path)/prebuilt/Android.mk
 include $(commands_recovery_local_path)/updater/Android.mk
 include $(commands_recovery_local_path)/applypatch/Android.mk
-include $(commands_recovery_local_path)/utilities/Android.mk
+include $(commands_recovery_local_path)/htc-offmode-charge/Android.mk
+include $(commands_recovery_local_path)/pigz/Android.mk
+include $(commands_recovery_local_path)/cryptsettings/Android.mk
+include $(commands_recovery_local_path)/libcrecovery/Android.mk
+
+ifeq ($(TW_INCLUDE_JB_CRYPTO), true)
+    include $(commands_recovery_local_path)/crypto/fs_mgr/Android.mk
+endif
+
 commands_recovery_local_path :=
+
+endif   # TARGET_ARCH == arm
+endif    # !TARGET_SIMULATOR
+

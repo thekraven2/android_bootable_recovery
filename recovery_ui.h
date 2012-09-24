@@ -17,12 +17,6 @@
 #ifndef _RECOVERY_UI_H
 #define _RECOVERY_UI_H
 
-#include "common.h"
-
-// Called before UI library is initialized.  Can change things like
-// how many frames are included in various animations, etc.
-extern void device_ui_init(UIParameters* ui_parameters);
-
 // Called when recovery starts up.  Returns 0.
 extern int device_recovery_start();
 
@@ -70,19 +64,12 @@ int device_wipe_data();
 #define HIGHLIGHT_UP        -2
 #define HIGHLIGHT_DOWN      -3
 #define SELECT_ITEM         -4
-#define GO_BACK             -5
+#define UP_A_LEVEL          -5
+#define HOME_MENU           -6
+#define MENU_MENU           -7
 
-#define ITEM_REBOOT          0
-#define ITEM_APPLY_EXT       1
-#define ITEM_APPLY_SDCARD    1  // historical synonym for ITEM_APPLY_EXT
-#define ITEM_WIPE_DATA       2
-#define ITEM_WIPE_CACHE      3
-// unused in cwr
+// Again, just to keep custom recovery builds happy
 #define ITEM_APPLY_CACHE     4
-#define ITEM_NANDROID        4
-#define ITEM_PARTITION       5
-#define ITEM_ADVANCED        6
-#define ITEM_POWEROFF        7
 
 // Header text to display above the main menu.
 extern char* MENU_HEADERS[];
@@ -90,15 +77,10 @@ extern char* MENU_HEADERS[];
 // Text of menu items.
 extern char* MENU_ITEMS[];
 
-// Loosely track the depth of the current menu
-extern int ui_root_menu;
+// NOTE: Main Menu index definitions moved to recovery.c
 
-int
-get_menu_selection(char** headers, char** items, int menu_only, int initial_selection);
-
-void
-set_sdcard_update_bootloader_message();
-
-extern int ui_handle_key(int key, int visible);
-
+int sdcard_directory(const char* path);
+int get_menu_selection(char** headers, char** items, int menu_only, int initial_selection);
+void prompt_and_wait();
+void finish_recovery(const char *send_intent);
 #endif

@@ -21,26 +21,25 @@
 #include <sys/stat.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <sys/vfs.h>
 
 #include "common.h"
 #include "install.h"
 #include "mincrypt/rsa.h"
-#include "minui/minui.h"
+#include "minuitwrp/minui.h"
 #include "minzip/SysUtil.h"
 #include "minzip/Zip.h"
 #include "mounts.h"
 #include "mtdutils/mtdutils.h"
 #include "roots.h"
 #include "verifier.h"
-
+#include "data.h"
 #include "firmware.h"
-
-#include "extendedcommands.h"
-
+#include "extra-functions.h"
 
 #define ASSUMED_UPDATE_BINARY_NAME  "META-INF/com/google/android/update-binary"
-#define ASSUMED_UPDATE_SCRIPT_NAME  "META-INF/com/google/android/update-script"
 #define PUBLIC_KEYS_FILE "/res/keys"
+#define INCLUDED_BINARY_NAME "/sbin/update-binary"
 
 // The update binary ask us to install a firmware file on reboot.  Set
 // that up.  Takes ownership of type and filename.
@@ -108,39 +107,39 @@ static const char *LAST_INSTALL_FILE = "/cache/recovery/last_install";
 // If the package contains an update binary, extract it and run it.
 static int
 try_update_binary(const char *path, ZipArchive *zip) {
-    const ZipEntry* binary_entry =
-            mzFindZipEntry(zip, ASSUMED_UPDATE_BINARY_NAME);
-    if (binary_entry == NULL) {
-        const ZipEntry* update_script_entry =
-                mzFindZipEntry(zip, ASSUMED_UPDATE_SCRIPT_NAME);
-        if (update_script_entry != NULL) {
-            ui_print("Amend scripting (update-script) is no longer supported.\n");
-            ui_print("Amend scripting was deprecated by Google in Android 1.5.\n");
-            ui_print("It was necessary to remove it when upgrading to the ClockworkMod 3.0 Gingerbread based recovery.\n");
-            ui_print("Please switch to Edify scripting (updater-script and update-binary) to create working update zip packages.\n");
-            return INSTALL_UPDATE_BINARY_MISSING;
-        }
+	struct statfs st;
+	char* binary = (char*)malloc(20);
 
-        mzCloseZipArchive(zip);
-        return INSTALL_UPDATE_BINARY_MISSING;
-    }
+	if (statfs(INCLUDED_BINARY_NAME, &st) != 0) {
+		// No update-binary included in recovery, extract it from the zip
+		strcpy(binary, "/tmp/update_binary");
+		const ZipEntry* binary_entry =
+				mzFindZipEntry(zip, ASSUMED_UPDATE_BINARY_NAME);
+		if (binary_entry == NULL) {
+			mzCloseZipArchive(zip);
+			return INSTALL_CORRUPT;
+		}
 
-    char* binary = "/tmp/update_binary";
-    unlink(binary);
-    int fd = creat(binary, 0755);
-    if (fd < 0) {
-        mzCloseZipArchive(zip);
-        LOGE("Can't make %s\n", binary);
-        return 1;
-    }
-    bool ok = mzExtractZipEntryToFile(zip, binary_entry, fd);
-    close(fd);
+		unlink(binary);
+		int fd = creat(binary, 0755);
+		if (fd < 0) {
+			mzCloseZipArchive(zip);
+			LOGE("Can't make %s\n", binary);
+			return 1;
+		}
+		bool ok = mzExtractZipEntryToFile(zip, binary_entry, fd);
+		close(fd);
+		mzCloseZipArchive(zip);
 
-    if (!ok) {
-        LOGE("Can't copy %s\n", ASSUMED_UPDATE_BINARY_NAME);
-        mzCloseZipArchive(zip);
-        return 1;
-    }
+		if (!ok) {
+			LOGE("Can't copy %s\n", ASSUMED_UPDATE_BINARY_NAME);
+			return 1;
+		}
+	} else {
+		// Use the update-binary that is included in the recovery
+		strcpy(binary, INCLUDED_BINARY_NAME);
+		LOGI("Using update-binary included in recovery: '%s'.\n", binary);
+	}
 
     int pipefd[2];
     pipe(pipefd);
@@ -189,7 +188,7 @@ try_update_binary(const char *path, ZipArchive *zip) {
 
     pid_t pid = fork();
     if (pid == 0) {
-        setenv("UPDATE_PACKAGE", path, 1);
+		setenv("UPDATE_PACKAGE", path, 1);
         close(pipefd[0]);
         execv(binary, args);
         fprintf(stdout, "E:Can't run %s (%s)\n", binary, strerror(errno));
@@ -197,7 +196,7 @@ try_update_binary(const char *path, ZipArchive *zip) {
     }
     close(pipefd[1]);
 
-    char* firmware_type = NULL;
+	char* firmware_type = NULL;
     char* firmware_filename = NULL;
 
     char buffer[1024];
@@ -219,7 +218,7 @@ try_update_binary(const char *path, ZipArchive *zip) {
             char* fraction_s = strtok(NULL, " \n");
             float fraction = strtof(fraction_s, NULL);
             ui_set_progress(fraction);
-        } else if (strcmp(command, "firmware") == 0) {
+		} else if (strcmp(command, "firmware") == 0) {
             char* type = strtok(NULL, " \n");
             char* filename = strtok(NULL, " \n");
 
@@ -248,11 +247,11 @@ try_update_binary(const char *path, ZipArchive *zip) {
     waitpid(pid, &status, 0);
     if (!WIFEXITED(status) || WEXITSTATUS(status) != 0) {
         LOGE("Error in %s\n(Status %d)\n", path, WEXITSTATUS(status));
-        mzCloseZipArchive(zip);
+		mzCloseZipArchive(zip);
         return INSTALL_ERROR;
     }
 
-    if (firmware_type != NULL) {
+	if (firmware_type != NULL) {
         int ret = handle_firmware_update(firmware_type, firmware_filename, zip);
         mzCloseZipArchive(zip);
         return ret;
@@ -334,8 +333,8 @@ exit:
     return NULL;
 }
 
-static int
-really_install_package(const char *path)
+int
+install_package(const char *path)
 {
     ui_set_background(BACKGROUND_ICON_INSTALLING);
     ui_print("Finding update package...\n");
@@ -347,11 +346,11 @@ really_install_package(const char *path)
         return INSTALL_CORRUPT;
     }
 
-    ui_print("Opening update package...\n");
-
     int err;
 
-    if (signature_check_enabled) {
+    ui_print("Opening update package...\n");
+
+    if (DataManager_GetIntValue(TW_SIGNED_ZIP_VERIFY_VAR)) {
         int numKeys;
         RSAPublicKey* loadedKeys = load_keys(PUBLIC_KEYS_FILE, &numKeys);
         if (loadedKeys == NULL) {
@@ -371,9 +370,7 @@ really_install_package(const char *path)
         LOGI("verify_file returned %d\n", err);
         if (err != VERIFY_SUCCESS) {
             LOGE("signature verification failed\n");
-            ui_show_text(1);
-            if (!confirm_selection("Install Untrusted Package?", "Yes - Install untrusted zip"))
-                return INSTALL_CORRUPT;
+            return INSTALL_CORRUPT;
         }
     }
 
@@ -390,24 +387,4 @@ really_install_package(const char *path)
      */
     ui_print("Installing update...\n");
     return try_update_binary(path, &zip);
-}
-
-int
-install_package(const char* path)
-{
-    FILE* install_log = fopen_path(LAST_INSTALL_FILE, "w");
-    if (install_log) {
-        fputs(path, install_log);
-        fputc('\n', install_log);
-    } else {
-        LOGE("failed to open last_install: %s\n", strerror(errno));
-    }
-    int result = really_install_package(path);
-    if (install_log) {
-        fputc(result == INSTALL_SUCCESS ? '1' : '0', install_log);
-        fputc('\n', install_log);
-        fclose(install_log);
-        chmod(LAST_INSTALL_FILE, 0644);
-    }
-    return result;
 }

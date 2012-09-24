@@ -25,26 +25,25 @@ void load_volume_table();
 // Return the Volume* record for this path (or NULL).
 Volume* volume_for_path(const char* path);
 
+// Return the Volume* record for this device (or NULL).
+Volume* volume_for_device(const char* device);
+
 // Make sure that the volume 'path' is on is mounted.  Returns 0 on
 // success (volume is mounted).
 int ensure_path_mounted(const char* path);
-int ensure_path_mounted_at_mount_point(const char* path, const char* mount_point);
 
 // Make sure that the volume 'path' is on is mounted.  Returns 0 on
 // success (volume is unmounted);
 int ensure_path_unmounted(const char* path);
 
+int mount_current_storage(void);
+int unmount_current_storage(void);
+int mount_internal_storage(void);
+int unmount_internal_storage(void);
+
 // Reformat the given volume (must be the mount point only, eg
 // "/cache"), no paths permitted.  Attempts to unmount the volume if
 // it is mounted.
 int format_volume(const char* volume);
-
-int get_num_volumes();
-
-Volume* get_device_volumes();
-
-int is_data_media();
-void setup_data_media();
-int is_data_media_volume_path(const char* path);
 
 #endif  // RECOVERY_ROOTS_H_
