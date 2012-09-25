@@ -107,11 +107,11 @@ static int get_framebuffer(GGLSurface *fb)
       vi.transp.length  = 8;
     } else { /* RGB565*/
       vi.red.offset     = 11;
-      vi.red.length     = 5;
+      vi.red.length     = 3;
       vi.green.offset   = 5;
-      vi.green.length   = 6;
+      vi.green.length   = 2;
       vi.blue.offset    = 0;
-      vi.blue.length    = 5;
+      vi.blue.length    = 3;
       vi.transp.offset  = 0;
       vi.transp.length  = 0;
     }

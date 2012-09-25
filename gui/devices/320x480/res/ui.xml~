@@ -47,7 +47,6 @@
 		<variable name="col1_x" value="8" />
 		<variable name="col2_x" value="162" />
 		<variable name="col_center_x" value="85" />
-		<variable name="col_center_medium_x" value="122" />
 		<variable name="center_x" value="160" />
 		<variable name="row1_y" value="84" />
 		<variable name="row2_y" value="174" />
@@ -95,7 +94,7 @@
 		<variable name="slider_text_y" value="425" />
 		<variable name="button_text_color" value="#AAAAAA" />
 		<variable name="text_color" value="#FFFFFF" />
-		<variable name="text_success_color" value="#cc4a1a" />
+		<variable name="text_success_color" value="#33B5E5" />
 		<variable name="text_fail_color" value="#FF0101" />
 		<variable name="home_button_x" value="7" />
 		<variable name="home_button_y" value="460" />
@@ -111,7 +110,7 @@
 		<variable name="input_width" value="307" />
 		<variable name="input_height" value="24" />
 		<variable name="input_background_color" value="#303030" />
-		<variable name="input_cursor_color" value="#cc4a1a" />
+		<variable name="input_cursor_color" value="#33B5E5" />
 		<variable name="input_cursor_width" value="2" />
 		<variable name="console_x" value="0" />
 		<variable name="console_width" value="320" />
@@ -126,7 +125,7 @@
 		<variable name="fileselector_install_height" value="306" />
 		<variable name="fileselector_header_background" value="#202020" />
 		<variable name="fileselector_header_textcolor" value="#AAAAAA" />
-		<variable name="fileselector_header_separatorcolor" value="#cc4a1a" />
+		<variable name="fileselector_header_separatorcolor" value="#33B5E5" />
 		<variable name="fileselector_header_separatorheight" value="2" />
 		<variable name="fileselector_separatorcolor" value="#505050" />
 		<variable name="fileselector_separatorheight" value="1" />
@@ -789,9 +788,6 @@
 				<action function="set">tw_has_action2=0</action>
 				<action function="set">tw_action2=</action>
 				<action function="set">tw_action2_param=</action>
-				<action function="set">tw_has_cancel=0</action>
-				<action function="set">tw_cancel_action=</action>
-				<action function="set">tw_cancel_param=</action>
 				<action function="page">%tw_clear_destination%</action>
 			</object>
 		</page>
@@ -873,15 +869,6 @@
 			</object>
 
 			<object type="template" name="action_page_console" />
-
-			<object type="button">
-				<condition var1="tw_has_cancel" var2="1" />
-				<placement x="%col_center_medium_x%" y="%row4_y%" />
-				<font resource="font" color="%button_text_color%" />
-				<text>Cancel</text>
-				<image resource="medium_button" />
-				<action function="%tw_cancel_action%">%tw_cancel_param%</action>
-			</object>
 
 			<object type="template" name="progress_bar" />
 
@@ -1301,7 +1288,7 @@
 
 			<object type="checkbox">
 				<condition var1="tw_sp1_name" op=">" var2="" />
-				<placement x="%col1_x%" y="%row9_text_y%" />
+				<placement x="%col1_x%" y="%row10_text_y%" />
 				<font resource="font" color="%text_color%" />
 				<text>%tw_sp1_name% (%tw_backup_sp1_size% MB)</text>
 				<data variable="tw_backup_sp1" />
@@ -1310,7 +1297,7 @@
 
 			<object type="checkbox">
 				<condition var1="tw_sp2_name" op=">" var2="" />
-				<placement x="%col1_x%" y="%row10_text_y%" />
+				<placement x="%col1_x%" y="%row11_text_y%" />
 				<font resource="font" color="%text_color%" />
 				<text>%tw_sp2_name% (%tw_backup_sp2_size% MB)</text>
 				<data variable="tw_backup_sp2" />
@@ -1319,7 +1306,7 @@
 
 			<object type="checkbox">
 				<condition var1="tw_sp3_name" op=">" var2="" />
-				<placement x="%col1_x%" y="%row11_text_y%" />
+				<placement x="%col1_x%" y="%row12_text_y%" />
 				<font resource="font" color="%text_color%" />
 				<text>%tw_sp3_name% (%tw_backup_sp3_size% MB)</text>
 				<data variable="tw_backup_sp3" />
@@ -1328,12 +1315,12 @@
 
 			<object type="text" color="%text_color%">
 				<font resource="font" />
-				<placement x="%col1_x%" y="%row13_text_y%" />
+				<placement x="%col1_x%" y="%row14_text_y%" />
 				<text>Free Space: %tw_storage_free_size% MB</text>
 			</object>
 
 			<object type="checkbox">
-				<placement x="%col1_x%" y="%row14_text_y%" />
+				<placement x="%col1_x%" y="%row15_text_y%" />
 				<font resource="font" color="%text_color%" />
 				<text>Enable compression.</text>
 				<data variable="tw_use_compression" />
@@ -1341,7 +1328,7 @@
 			</object>
 
 			<object type="checkbox">
-				<placement x="%col1_x%" y="%row15_text_y%" />
+				<placement x="%col1_x%" y="%row16_text_y%" />
 				<font resource="font" color="%text_color%" />
 				<text>Skip MD5 generation during backup.</text>
 				<data variable="tw_skip_md5_generate" />
@@ -1349,7 +1336,7 @@
 			</object>
 
 			<object type="button">
-				<placement x="%col1_x%" y="%row16_text_y%" />
+				<placement x="%col1_x%" y="%row17_text_y%" />
 				<font resource="font" color="%text_color%" />
 				<conditions>
 					<condition var1="tw_has_dual_storage" var2="1" />
@@ -1361,7 +1348,7 @@
 			</object>
 
 			<object type="button">
-				<placement x="%col1_x%" y="%row16_text_y%" />
+				<placement x="%col1_x%" y="%row17_text_y%" />
 				<font resource="font" color="%text_color%" />
 				<conditions>
 					<condition var1="tw_has_dual_storage" var2="1" />
@@ -1373,7 +1360,7 @@
 			</object>
 
 			<object type="button">
-				<placement x="%col2_x%" y="%row16_text_y%" />
+				<placement x="%col2_x%" y="%row17_text_y%" />
 				<font resource="font" color="%text_color%" />
 				<conditions>
 					<condition var1="tw_has_dual_storage" var2="1" />
@@ -1385,7 +1372,7 @@
 			</object>
 
 			<object type="button">
-				<placement x="%col2_x%" y="%row16_text_y%" />
+				<placement x="%col2_x%" y="%row17_text_y%" />
 				<font resource="font" color="%text_color%" />
 				<conditions>
 					<condition var1="tw_has_dual_storage" var2="1" />
@@ -2526,15 +2513,6 @@
 				<image resource="main_button" />
 				<action function="page">terminalfolder</action>
 			</object>
-
-			<object type="button">
-				<placement x="%col2_x%" y="%row3_y%" />
-				<font resource="font" color="%button_text_color%" />
-				<text>Reload Theme</text>
-				<image resource="main_button" />
-				<action function="reload"></action>
-			</object>
-
 
 			<object type="button">
 				<condition var1="tw_show_dumlock" var2="1" />

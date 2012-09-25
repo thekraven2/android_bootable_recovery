@@ -2,7 +2,7 @@ LOCAL_PATH := $(call my-dir)
 include $(CLEAR_VARS)
 
 LOCAL_SRC_FILES := events.c resources.c graphics.c
-LOCAL_CFLAGS += -DRECOVERY_RGBX
+
 LOCAL_C_INCLUDES +=\
     external/libpng\
     external/zlib\
