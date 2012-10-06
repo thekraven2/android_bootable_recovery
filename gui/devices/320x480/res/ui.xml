@@ -1130,7 +1130,7 @@
 
 			<object type="button">
 				<condition var1="tw_has_internal" var2="1" />
-				<placement x="%col2_x%" y="%row3_y%" />
+				<placement x="%col2_x%" y="%row4_y%" />
 				<font resource="font" color="%button_text_color%" />
 				<text>Internal Storage</text>
 				<image resource="main_button" />
@@ -1196,7 +1196,7 @@
 
 			<object type="button">
 				<condition var1="tw_has_sdext_partition" var2="1" />
-				<placement x="%col2_x%" y="%row4_y%" />
+				<placement x="%col2_x%" y="%row3_y%" />
 				<font resource="font" color="%button_text_color%" />
 				<text>SD Ext</text>
 				<image resource="main_button" />
@@ -2232,26 +2232,6 @@
 					<action function="set">tw_back=reboot</action>
 					<action function="set">tw_action=reboot</action>
 					<action function="set">tw_action_param=recovery</action>
-					<action function="set">tw_has_action2=0</action>
-					<action function="set">tw_text1=No OS Installed! Are you</action>
-					<action function="set">tw_text2=sure you wish to reboot?</action>
-					<action function="set">tw_action_text1=Rebooting...</action>
-					<action function="set">tw_complete_text1=Rebooting...</action>
-					<action function="set">tw_slider_text=Swipe to Reboot</action>
-					<action function="page">rebootcheck</action>
-				</actions>
-			</object>
-
-			<object type="button">
-				<condition var1="tw_reboot_bootloader" var2="1" />
-				<placement x="%col2_x%" y="%row2_y%" />
-				<font resource="font" color="%button_text_color%" />
-				<text>Bootloader</text>
-				<image resource="main_button" />
-				<actions>
-					<action function="set">tw_back=reboot</action>
-					<action function="set">tw_action=reboot</action>
-					<action function="set">tw_action_param=bootloader</action>
 					<action function="set">tw_has_action2=0</action>
 					<action function="set">tw_text1=No OS Installed! Are you</action>
 					<action function="set">tw_text2=sure you wish to reboot?</action>
