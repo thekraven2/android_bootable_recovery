@@ -137,9 +137,9 @@ static int get_framebuffer(GGLSurface *fb)
 		vi.red.offset     = 11;
 #else
         fprintf(stderr, "Pixel format: BGR_565\n");
-		vi.blue.offset    = 11;
+		vi.blue.offset    = 0;
 		vi.green.offset   = 5;
-		vi.red.offset     = 0;
+		vi.red.offset     = 11;
 #endif
 		if (PIXEL_SIZE != 2)    fprintf(stderr, "E: Pixel Size mismatch!\n");
 		vi.blue.length    = 5;
