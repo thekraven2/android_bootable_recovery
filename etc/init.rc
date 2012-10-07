@@ -35,17 +35,23 @@ service recovery /sbin/recovery
 
 service adbd /sbin/adbd recovery
     disabled
+	
+on property:persist.service.adb.enable=1 
+    start adbd 
+
+on property:persist.service.adb.enable=0 
+    stop adbd 
 
 # Always start adbd on userdebug and eng builds
 # In recovery, always run adbd as root.
 on property:ro.debuggable=1
     write /sys/class/android_usb/android0/enable 0
-    write /sys/class/android_usb/android0/idVendor 1004
-    write /sys/class/android_usb/android0/idProduct 618e
+    write /sys/class/android_usb/android0/idVendor 18D1
+    write /sys/class/android_usb/android0/idProduct D001
     write /sys/class/android_usb/android0/functions adb
     #write /sys/class/android_usb/android0/enable 1
     write /sys/class/android_usb/android0/iManufacturer LGE
-    write /sys/class/android_usb/android0/iProduct LG-LS670
+    write /sys/class/android_usb/android0/iProduct L
     write /sys/class/android_usb/android0/iSerial $ro.serialno
     #start adbd
     setprop service.adb.root 1
