@@ -895,8 +895,15 @@ main(int argc, char **argv) {
 
 #ifdef TW_INCLUDE_INJECTTWRP
 	// Back up TWRP Ramdisk if needed:
+	TWPartition* Boot = PartitionManager.Find_Partition_By_Path("/boot");
+
 	LOGI("Backing up TWRP ramdisk...\n");
-	system("injecttwrp --backup /tmp/backup_recovery_ramdisk.img");
+	if (Boot == NULL || Boot->Current_File_System != "emmc")
+		system("injecttwrp --backup /tmp/backup_recovery_ramdisk.img");
+	else {
+		string injectcmd = "injecttwrp --backup /tmp/backup_recovery_ramdisk.img bd=" + Boot->Actual_Block_Device;
+		system(injectcmd.c_str());
+	}
 	LOGI("Backup of TWRP ramdisk done.\n");
 #endif
 
@@ -952,9 +959,9 @@ main(int argc, char **argv) {
 			system("mv /system/recovery-from-boot.p /system/recovery-from-boot.bak");
 			ui_print("Renamed stock recovery file in /system to prevent\nthe stock ROM from replacing TWRP.\n");
 		}
+		PartitionManager.UnMount_By_Path("/system", false);
 		if (DataManager_GetIntValue(TW_IS_ENCRYPTED) == 0 && OpenRecoveryScript::check_for_script_file()) {
 			gui_console_only();
-			OpenRecoveryScript::run_script_file();
 			if (OpenRecoveryScript::run_script_file() != 0) {
 				// There was an error, boot the recovery
 				gui_start();

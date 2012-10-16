@@ -249,6 +249,7 @@ bool TWPartition::Process_Fstab_Line(string Line, bool Display_Error) {
 			Removable = true;
 #ifndef RECOVERY_SDCARD_ON_DATA
 			Setup_AndSec();
+			Mount_Storage_Retry();
 #endif
 		}
 #endif
@@ -258,6 +259,7 @@ bool TWPartition::Process_Fstab_Line(string Line, bool Display_Error) {
 			Storage_Path = EXPAND(TW_INTERNAL_STORAGE_PATH);
 #ifndef RECOVERY_SDCARD_ON_DATA
 			Setup_AndSec();
+			Mount_Storage_Retry();
 #endif
 		}
 #else
@@ -266,53 +268,13 @@ bool TWPartition::Process_Fstab_Line(string Line, bool Display_Error) {
 			Storage_Path = "/emmc";
 #ifndef RECOVERY_SDCARD_ON_DATA
 			Setup_AndSec();
+			Mount_Storage_Retry();
 #endif
 		}
 #endif
 	} else if (Is_Image(Fstab_File_System)) {
 		Find_Actual_Block_Device();
 		Setup_Image(Display_Error);
-		if (Mount_Point == "/boot") {
-			int backup_display_size = (int)(Backup_Size / 1048576LLU);
-			DataManager::SetValue(TW_BACKUP_BOOT_SIZE, backup_display_size);
-			if (Backup_Size == 0) {
-				DataManager::SetValue(TW_HAS_BOOT_PARTITION, 0);
-				DataManager::SetValue(TW_BACKUP_BOOT_VAR, 0);
-			} else
-				DataManager::SetValue(TW_HAS_BOOT_PARTITION, 1);
-		} else if (Mount_Point == "/recovery") {
-			int backup_display_size = (int)(Backup_Size / 1048576LLU);
-			DataManager::SetValue(TW_BACKUP_RECOVERY_SIZE, backup_display_size);
-			if (Backup_Size == 0) {
-				DataManager::SetValue(TW_HAS_RECOVERY_PARTITION, 0);
-				DataManager::SetValue(TW_BACKUP_RECOVERY_VAR, 0);
-			} else
-				DataManager::SetValue(TW_HAS_RECOVERY_PARTITION, 1);
-		}
-#ifdef SP1_NAME
-		string SP1_Path = "/";
-		SP1_Path += EXPAND(SP1_NAME);
-		if (Mount_Point == SP1_Path) {
-			int backup_display_size = (int)(Backup_Size / 1048576LLU);
-			DataManager::SetValue(TW_BACKUP_SP1_SIZE, backup_display_size);
-		}
-#endif
-#ifdef SP2_NAME
-		string SP2_Path = "/";
-		SP2_Path += EXPAND(SP2_NAME);
-		if (Mount_Point == SP2_Path) {
-			int backup_display_size = (int)(Backup_Size / 1048576LLU);
-			DataManager::SetValue(TW_BACKUP_SP2_SIZE, backup_display_size);
-		}
-#endif
-#ifdef SP3_NAME
-		string SP3_Path = "/";
-		SP3_Path += EXPAND(SP3_NAME);
-		if (Mount_Point == SP3_Path) {
-			int backup_display_size = (int)(Backup_Size / 1048576LLU);
-			DataManager::SetValue(TW_BACKUP_SP3_SIZE, backup_display_size);
-		}
-#endif
 	}
 
 	// Process any custom flags
@@ -482,6 +444,18 @@ void TWPartition::Find_Real_Block_Device(string& Block, bool Display_Error) {
 	} else {
 		Block = device;
 		return;
+	}
+}
+
+void TWPartition::Mount_Storage_Retry(void) {
+	// On some devices, storage doesn't want to mount right away, retry and sleep
+	if (!Mount(false)) {
+		int retry_count = 5;
+		while (retry_count > 0 && !Mount(false)) {
+			usleep(500000);
+			retry_count--;
+		}
+		Mount(true);
 	}
 }
 
@@ -1177,8 +1151,8 @@ bool TWPartition::Backup_DD(string backup_folder) {
 	Command = "dd if=" + Actual_Block_Device + " of='" + Full_FileName + "'";
 	LOGI("Backup command: '%s'\n", Command.c_str());
 	system(Command.c_str());
-	if (TWFunc::Get_File_Size(Full_FileName) != Backup_Size) {
-		LOGE("Backup file size %lu for '%s' is does not match backup size %llu.\n", TWFunc::Get_File_Size(Full_FileName), Full_FileName.c_str(), Backup_Size);
+	if (TWFunc::Get_File_Size(Full_FileName) == 0) {
+		LOGE("Backup file size for '%s' is 0 bytes.\n", Full_FileName.c_str());
 		return false;
 	}
 	return true;
@@ -1253,7 +1227,7 @@ bool TWPartition::Restore_Tar(string restore_folder) {
 		Full_FileName = restore_folder + "/" + Backup_FileName + split_index;
 		while (TWFunc::Path_Exists(Full_FileName)) {
 			ui_print("Restoring archive %i...\n", index + 1);
-			Command = "cd " + Backup_Path + " && tar -xf '" + Full_FileName + "'";
+			Command = "tar -xf '" + Full_FileName + "'";
 			LOGI("Restore command: '%s'\n", Command.c_str());
 			system(Command.c_str());
 			index++;
@@ -1301,11 +1275,12 @@ bool TWPartition::Restore_Flash_Image(string restore_folder) {
 }
 
 bool TWPartition::Update_Size(bool Display_Error) {
-	bool ret = false;
+	bool ret = false, Was_Already_Mounted = false;
 
 	if (!Can_Be_Mounted && !Is_Encrypted)
 		return false;
 
+	Was_Already_Mounted = Is_Mounted();
 	if (Removable || Is_Encrypted) {
 		if (!Mount(false))
 			return true;
@@ -1313,9 +1288,13 @@ bool TWPartition::Update_Size(bool Display_Error) {
 		return false;
 
 	ret = Get_Size_Via_statfs(Display_Error);
-	if (!ret || Size == 0)
-		if (!Get_Size_Via_df(Display_Error))
+	if (!ret || Size == 0) {
+		if (!Get_Size_Via_df(Display_Error)) {
+			if (!Was_Already_Mounted)
+				UnMount(false);
 			return false;
+		}
+	}
 
 	if (Has_Data_Media) {
 		if (Mount(Display_Error)) {
@@ -1330,14 +1309,22 @@ bool TWPartition::Update_Size(bool Display_Error) {
 			int fre = (int)(Free / 1048576LLU);
 			int datmed = (int)(data_media_used / 1048576LLU);
 			LOGI("Data backup size is %iMB, size: %iMB, used: %iMB, free: %iMB, in data/media: %iMB.\n", bak, total, us, fre, datmed);
-		} else
+		} else {
+			if (!Was_Already_Mounted)
+				UnMount(false);
 			return false;
+		}
 	} else if (Has_Android_Secure) {
 		if (Mount(Display_Error))
 			Backup_Size = TWFunc::Get_Folder_Size(Backup_Path, Display_Error);
-		else
+		else {
+			if (!Was_Already_Mounted)
+				UnMount(false);
 			return false;
+		}
 	}
+	if (!Was_Already_Mounted)
+		UnMount(false);
 	return true;
 }
 
@@ -1350,7 +1337,7 @@ void TWPartition::Find_Actual_Block_Device(void) {
 		Is_Present = true;
 		Actual_Block_Device = Primary_Block_Device;
 	} else if (!Alternate_Block_Device.empty() && TWFunc::Path_Exists(Alternate_Block_Device)) {
-		Actual_Block_Device = Primary_Block_Device;
+		Actual_Block_Device = Alternate_Block_Device;
 		Is_Present = true;
 	} else
 		Is_Present = false;

@@ -133,6 +133,7 @@ private:
 	bool Make_Dir(string Path, bool Display_Error);                           // Creates a directory if it doesn't already exist
 	bool Find_MTD_Block_Device(string MTD_Name);                              // Finds the mtd block device based on the name from the fstab
 	void Recreate_AndSec_Folder(void);                                        // Recreates the .android_secure folder
+	void Mount_Storage_Retry(void);                                           // Tries multiple times with a half second delay to mount a device in case storage is slow to mount
 
 friend class TWPartitionManager;
 };
@@ -181,13 +182,16 @@ public:
 	virtual int usb_storage_enable(void);                                     // Enable USB storage mode
 	virtual int usb_storage_disable(void);                                    // Disable USB storage mode
 	virtual void Mount_All_Storage(void);                                     // Mounts all storage locations
+	virtual void UnMount_Main_Partitions(void);                               // Unmounts system and data if not data/media and boot if boot is mountable
 	virtual int Partition_SDCard(void);                                       // Repartitions the sdcard
 
+	virtual int Fix_Permissions(); 
 private:
 	bool Make_MD5(bool generate_md5, string Backup_Folder, string Backup_Filename); // Generates an MD5 after a backup is made
 	bool Backup_Partition(TWPartition* Part, string Backup_Folder, bool generate_md5, unsigned long long* img_bytes_remaining, unsigned long long* file_bytes_remaining, unsigned long *img_time, unsigned long *file_time, unsigned long long *img_bytes, unsigned long long *file_bytes);
 	bool Restore_Partition(TWPartition* Part, string Restore_Name, int partition_count);
 	void Output_Partition(TWPartition* Part);
+	int Open_Lun_File(string Partition_Path, string Lun_File);
 
 private:
 	std::vector<TWPartition*> Partitions;                                     // Vector list of all partitions

@@ -38,6 +38,7 @@
 #include "partitions.hpp"
 #include "data.hpp"
 #include "twrp-functions.hpp"
+#include "fixPermissions.hpp"
 
 #ifdef TW_INCLUDE_CRYPTO
 	#ifdef TW_INCLUDE_JB_CRYPTO
@@ -85,6 +86,7 @@ int TWPartitionManager::Process_Fstab(string Fstab_Filename, bool Display_Error)
 			LOGI("Error creating fstab\n");
 	}
 	Update_System_Details();
+	UnMount_Main_Partitions();
 	return true;
 }
 
@@ -872,6 +874,7 @@ int TWPartitionManager::Run_Backup(void) {
 
 	ui_print("[%llu MB TOTAL BACKED UP]\n", actual_backup_size);
 	Update_System_Details();
+	UnMount_Main_Partitions();
 	ui_print("[BACKUP COMPLETED IN %d SECONDS]\n\n", total_time); // the end
     return true;
 }
@@ -1070,6 +1073,7 @@ int TWPartitionManager::Run_Restore(string Restore_Name) {
 
 	TWFunc::GUI_Operation_Text(TW_UPDATE_SYSTEM_DETAILS_TEXT, "Updating System Details");
 	Update_System_Details();
+	UnMount_Main_Partitions();
 	time(&rStop);
 	ui_print("[RESTORE COMPLETED IN %d SECONDS]\n\n",(int)difftime(rStop,rStart));
 	return true;
@@ -1459,6 +1463,43 @@ void TWPartitionManager::Update_System_Details(void) {
 				DataManager::SetValue(TW_BACKUP_SP3_SIZE, backup_display_size);
 			}
 #endif
+		} else {
+			// Handle unmountable partitions in case we reset defaults
+			if ((*iter)->Mount_Point == "/boot") {
+				int backup_display_size = (int)((*iter)->Backup_Size / 1048576LLU);
+				DataManager::SetValue(TW_BACKUP_BOOT_SIZE, backup_display_size);
+				if ((*iter)->Backup_Size == 0) {
+					DataManager::SetValue(TW_HAS_BOOT_PARTITION, 0);
+					DataManager::SetValue(TW_BACKUP_BOOT_VAR, 0);
+				} else
+					DataManager::SetValue(TW_HAS_BOOT_PARTITION, 1);
+			} else if ((*iter)->Mount_Point == "/recovery") {
+				int backup_display_size = (int)((*iter)->Backup_Size / 1048576LLU);
+				DataManager::SetValue(TW_BACKUP_RECOVERY_SIZE, backup_display_size);
+				if ((*iter)->Backup_Size == 0) {
+					DataManager::SetValue(TW_HAS_RECOVERY_PARTITION, 0);
+					DataManager::SetValue(TW_BACKUP_RECOVERY_VAR, 0);
+				} else
+					DataManager::SetValue(TW_HAS_RECOVERY_PARTITION, 1);
+			}
+#ifdef SP1_NAME
+			if ((*iter)->Backup_Name == EXPAND(SP1_NAME)) {
+				int backup_display_size = (int)((*iter)->Backup_Size / 1048576LLU);
+				DataManager::SetValue(TW_BACKUP_SP1_SIZE, backup_display_size);
+			}
+#endif
+#ifdef SP2_NAME
+			if ((*iter)->Backup_Name == EXPAND(SP2_NAME)) {
+				int backup_display_size = (int)((*iter)->Backup_Size / 1048576LLU);
+				DataManager::SetValue(TW_BACKUP_SP2_SIZE, backup_display_size);
+			}
+#endif
+#ifdef SP3_NAME
+			if ((*iter)->Backup_Name == EXPAND(SP3_NAME)) {
+				int backup_display_size = (int)((*iter)->Backup_Size / 1048576LLU);
+				DataManager::SetValue(TW_BACKUP_SP3_SIZE, backup_display_size);
+			}
+#endif
 		}
 	}
 	DataManager::SetValue(TW_BACKUP_DATA_SIZE, data_size);
@@ -1542,6 +1583,7 @@ int TWPartitionManager::Decrypt_Device(string Password) {
 			// Sleep for a bit so that the device will be ready
 			sleep(1);
 			Update_System_Details();
+			UnMount_Main_Partitions();
 		} else
 			LOGE("Unable to locate data partition.\n");
 	}
@@ -1553,89 +1595,88 @@ int TWPartitionManager::Decrypt_Device(string Password) {
 	return 1;
 }
 
+int TWPartitionManager::Fix_Permissions(void) {
+	int result = 0;
+	if (!Mount_By_Path("/data", true))
+		return false;
+
+	if (!Mount_By_Path("/system", true))
+		return false;
+
+	Mount_By_Path("/sd-ext", false);
+
+	fixPermissions perms;
+	result = perms.fixPerms(true, false);
+	ui_print("Done.\n\n");
+	return result;
+}
+
 //partial kangbang from system/vold
 #ifndef CUSTOM_LUN_FILE
 #define CUSTOM_LUN_FILE "/sys/devices/platform/usb_mass_storage/lun%d/file"
 #endif
 
+int TWPartitionManager::Open_Lun_File(string Partition_Path, string Lun_File) {
+	int fd;
+	TWPartition* Part = Find_Partition_By_Path(Partition_Path);
+
+	if (Part == NULL) {
+		LOGE("Unable to locate volume information for USB storage mode.");
+		return false;
+	}
+	if (!Part->UnMount(true))
+		return false;
+
+	if ((fd = open(Lun_File.c_str(), O_WRONLY)) < 0) {
+		LOGE("Unable to open ums lunfile '%s': (%s)\n", Lun_File.c_str(), strerror(errno));
+		return false;
+	}
+
+	if (write(fd, Part->Actual_Block_Device.c_str(), Part->Actual_Block_Device.size()) < 0) {
+		LOGE("Unable to write to ums lunfile '%s': (%s)\n", Lun_File.c_str(), strerror(errno));
+		close(fd);
+		return false;
+	}
+	close(fd);
+	return true;
+}
+
 int TWPartitionManager::usb_storage_enable(void) {
-	int fd, has_dual, has_data_media;
+	int has_dual, has_data_media;
 	char lun_file[255];
-	TWPartition* Part;
 	string ext_path;
+	bool has_multiple_lun = false;
 
 	DataManager::GetValue(TW_HAS_DUAL_STORAGE, has_dual);
 	DataManager::GetValue(TW_HAS_DATA_MEDIA, has_data_media);
 	if (has_dual == 1 && has_data_media == 0) {
-		Part = Find_Partition_By_Path(DataManager::GetSettingsStoragePath());
-		if (Part == NULL) {
-			LOGE("Unable to locate volume information.");
-			return false;
+		string Lun_File_str = CUSTOM_LUN_FILE;
+		size_t found = Lun_File_str.find("%");
+		if (found != string::npos) {
+			sprintf(lun_file, CUSTOM_LUN_FILE, 1);
+			if (TWFunc::Path_Exists(lun_file))
+				has_multiple_lun = true;
 		}
-		if (!Part->UnMount(true))
-			return false;
-
-		sprintf(lun_file, CUSTOM_LUN_FILE, 0);
-		if ((fd = open(lun_file, O_WRONLY)) < 0) {
-			LOGE("Unable to open ums lunfile '%s': (%s)\n", lun_file, strerror(errno));
-			return false;
+		if (!has_multiple_lun) {
+			// Device doesn't have multiple lun files, mount current storage
+			sprintf(lun_file, CUSTOM_LUN_FILE, 0);
+			return Open_Lun_File(DataManager::GetCurrentStoragePath(), lun_file);
+		} else {
+			// Device has multiple lun files
+			sprintf(lun_file, CUSTOM_LUN_FILE, 0);
+			if (!Open_Lun_File(DataManager::GetSettingsStoragePath(), lun_file))
+				return false;
+			DataManager::GetValue(TW_EXTERNAL_PATH, ext_path);
+			sprintf(lun_file, CUSTOM_LUN_FILE, 1);
+			return Open_Lun_File(ext_path, lun_file);
 		}
-
-		if (write(fd, Part->Actual_Block_Device.c_str(), Part->Actual_Block_Device.size()) < 0) {
-			LOGE("Unable to write to ums lunfile '%s': (%s)\n", lun_file, strerror(errno));
-			close(fd);
-			return false;
-		}
-		close(fd);
-
-		DataManager::GetValue(TW_EXTERNAL_PATH, ext_path);
-		Part = Find_Partition_By_Path(ext_path);
-		if (Part == NULL) {
-			LOGE("Unable to locate volume information.\n");
-			return false;
-		}
-		if (!Part->UnMount(true))
-			return false;
-
-		sprintf(lun_file, CUSTOM_LUN_FILE, 1);
-		if ((fd = open(lun_file, O_WRONLY)) < 0) {
-			LOGE("Unable to open ums lunfile '%s': (%s)\n", lun_file, strerror(errno));
-			return false;
-		}
-
-		if (write(fd, Part->Actual_Block_Device.c_str(), Part->Actual_Block_Device.size()) < 0) {
-			LOGE("Unable to write to ums lunfile '%s': (%s)\n", lun_file, strerror(errno));
-			close(fd);
-			return false;
-		}
-		close(fd);
 	} else {
 		if (has_data_media == 0)
 			ext_path = DataManager::GetCurrentStoragePath();
 		else
 			DataManager::GetValue(TW_EXTERNAL_PATH, ext_path);
-
-		Part = Find_Partition_By_Path(ext_path);
-		if (Part == NULL) {
-			LOGE("Unable to locate volume information.\n");
-			return false;
-		}
-		if (!Part->UnMount(true))
-			return false;
-
 		sprintf(lun_file, CUSTOM_LUN_FILE, 0);
-
-		if ((fd = open(lun_file, O_WRONLY)) < 0) {
-			LOGE("Unable to open ums lunfile '%s': (%s)\n", lun_file, strerror(errno));
-			return false;
-		}
-
-		if (write(fd, Part->Actual_Block_Device.c_str(), Part->Actual_Block_Device.size()) < 0) {
-			LOGE("Unable to write to ums lunfile '%s': (%s)\n", lun_file, strerror(errno));
-			close(fd);
-			return false;
-		}
-		close(fd);
+		return Open_Lun_File(ext_path, lun_file);
 	}
 	return true;
 }
@@ -1673,6 +1714,7 @@ int TWPartitionManager::usb_storage_disable(void) {
 	}
 	Mount_All_Storage();
 	Update_System_Details();
+	UnMount_Main_Partitions();
 	return true;
 }
 
@@ -1683,6 +1725,21 @@ void TWPartitionManager::Mount_All_Storage(void) {
 		if ((*iter)->Is_Storage)
 			(*iter)->Mount(false);
 	}
+}
+
+void TWPartitionManager::UnMount_Main_Partitions(void) {
+	// Unmounts system and data if data is not data/media
+	// Also unmounts boot if boot is mountable
+	LOGI("Unmounting main partitions...\n");
+
+	TWPartition* Boot_Partition = Find_Partition_By_Path("/boot");
+
+	UnMount_By_Path("/system", true);
+#ifndef RECOVERY_SDCARD_ON_DATA
+	UnMount_By_Path("/data", true);
+#endif
+	if (Boot_Partition != NULL && Boot_Partition->Can_Be_Mounted)
+		Boot_Partition->UnMount(true);
 }
 
 int TWPartitionManager::Partition_SDCard(void) {
