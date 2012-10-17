@@ -1122,27 +1122,7 @@
 				</actions>
 			</object>
 
-			<object type="button">
-				<condition var1="tw_has_external" var2="1" />
-				<placement x="%col1_x%" y="%row3_y%" />
-				<font resource="font" color="%button_text_color%" />
-				<text>External Storage</text>
-				<image resource="main_button" />
-				<actions>
-					<action function="set">tw_back=wipe</action>
-					<action function="set">tw_action=wipe</action>
-					<action function="set">tw_action_param=EXTERNAL</action>
-					<action function="set">tw_has_action2=1</action>
-					<action function="set">tw_action2=set</action>
-					<action function="set">tw_action2_param=tw_zip_location=/sdcard</action>
-					<action function="set">tw_text1=Wipe External Storage (SD Card)?</action>
-					<action function="set">tw_action_text1=Wiping External Storage...</action>
-					<action function="set">tw_complete_text1=External Storage Wipe Complete</action>
-					<action function="set">tw_slider_text=Swipe to Wipe</action>
-					<action function="page">confirm_action</action>
-				</actions>
-			</object>
-
+			
 			<object type="button">
 				<condition var1="tw_has_internal" var2="1" />
 				<placement x="%col2_x%" y="%row4_y%" />
