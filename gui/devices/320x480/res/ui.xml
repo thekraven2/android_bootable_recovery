@@ -130,7 +130,7 @@
 		<variable name="fileselector_header_separatorheight" value="2" />
 		<variable name="fileselector_separatorcolor" value="#505050" />
 		<variable name="fileselector_separatorheight" value="1" />
-		<variable name="fileselector_background" value="#303030" />
+		<variable name="fileselector_background" value="#000000" />
 		<variable name="fileselector_spacing" value="12" />
 		<variable name="listbox_x" value="3" />
 		<variable name="listbox_width" value="313" />
@@ -202,6 +202,7 @@
 			<object type="button">
 				<placement x="%home_button_x%" y="%home_button_y%" />
 				<font resource="font" color="%button_text_color%" />
+				<highlight color="#90909080" />
 				<text></text>
 				<image resource="home_icon" />
 				<condition var1="tw_busy" var2="0" />
@@ -212,6 +213,7 @@
 				<placement x="%back_button_x%" y="%back_button_y%" />
 				<font resource="font" color="%button_text_color%" />
 				<text></text>
+				<highlight color="#90909080" />
 				<image resource="back_icon" />
 				<condition var1="tw_busy" var2="0" />
 				<action function="key">back</action>
@@ -255,6 +257,7 @@
 
 			<object type="button">
 				<placement x="%sort_col1_button_x%" y="%sort_asc_button_y%" />
+				<highlight color="#90909080" />
 				<font resource="mediumfont" color="%button_text_color%" />
 				<text>Name</text>
 				<image resource="sort_button" />
@@ -263,6 +266,7 @@
 
 			<object type="button">
 				<placement x="%sort_col2_button_x%" y="%sort_asc_button_y%" />
+				<highlight color="#90909080" />
 				<font resource="mediumfont" color="%button_text_color%" />
 				<text>Date</text>
 				<image resource="sort_button" />
@@ -271,6 +275,7 @@
 
 			<object type="button">
 				<placement x="%sort_col3_button_x%" y="%sort_asc_button_y%" />
+				<highlight color="#90909080" />
 				<font resource="mediumfont" color="%button_text_color%" />
 				<text>Size</text>
 				<image resource="sort_button" />
@@ -285,6 +290,7 @@
 
 			<object type="button">
 				<placement x="%sort_col1_button_x%" y="%sort_desc_button_y%" />
+				<highlight color="#90909080" />
 				<font resource="mediumfont" color="%button_text_color%" />
 				<text>Name</text>
 				<image resource="sort_button" />
@@ -293,6 +299,7 @@
 
 			<object type="button">
 				<placement x="%sort_col2_button_x%" y="%sort_desc_button_y%" />
+				<highlight color="#90909080" />
 				<font resource="mediumfont" color="%button_text_color%" />
 				<text>Date</text>
 				<image resource="sort_button" />
@@ -301,6 +308,7 @@
 
 			<object type="button">
 				<placement x="%sort_col3_button_x%" y="%sort_desc_button_y%" />
+				<highlight color="#90909080" />
 				<font resource="mediumfont" color="%button_text_color%" />
 				<text>Size</text>
 				<image resource="sort_button" />
@@ -369,6 +377,7 @@
 
 			<object type="button">
 				<placement x="%col1_x%" y="%row1_y%" />
+				<highlight color="#90909080" />
 				<font resource="font" color="%button_text_color%" />
 				<text>Install</text>
 				<image resource="main_button" />
@@ -380,6 +389,7 @@
 
 			<object type="button">
 				<placement x="%col2_x%" y="%row1_y%" />
+				<highlight color="#90909080" />
 				<font resource="font" color="%button_text_color%" />
 				<text>Wipe</text>
 				<image resource="main_button" />
@@ -388,6 +398,7 @@
 
 			<object type="button">
 				<placement x="%col1_x%" y="%row2_y%" />
+				<highlight color="#90909080" />
 				<font resource="font" color="%button_text_color%" />
 				<text>Backup</text>
 				<image resource="main_button" />
@@ -396,6 +407,7 @@
 
 			<object type="button">
 				<placement x="%col2_x%" y="%row2_y%" />
+				<highlight color="#90909080" />
 				<font resource="font" color="%button_text_color%" />
 				<text>Restore</text>
 				<image resource="main_button" />
@@ -404,6 +416,7 @@
 
 			<object type="button">
 				<placement x="%col1_x%" y="%row3_y%" />
+				<highlight color="#90909080" />
 				<font resource="font" color="%button_text_color%" />
 				<text>Mount</text>
 				<image resource="main_button" />
@@ -412,6 +425,7 @@
 
 			<object type="button">
 				<placement x="%col2_x%" y="%row3_y%" />
+				<highlight color="#90909080" />
 				<font resource="font" color="%button_text_color%" />
 				<text>Settings</text>
 				<image resource="main_button" />
@@ -421,6 +435,7 @@
 
 			<object type="button">
 				<placement x="%col1_x%" y="%row4_y%" />
+				<highlight color="#90909080" />
 				<font resource="font" color="%button_text_color%" />
 				<text>Advanced</text>
 				<image resource="main_button" />
@@ -429,6 +444,7 @@
 
 			<object type="button">
 				<placement x="%col2_x%" y="%row4_y%" />
+				<highlight color="#90909080" />
 				<font resource="font" color="%button_text_color%" />
 				<text>Reboot</text>
 				<image resource="main_button" />
@@ -1174,7 +1190,7 @@
 
 			<object type="button">
 				<condition var1="tw_has_data_media" var2="0" />
-				<placement x="%col1_x%" y="%row4_y%" />
+				<placement x="%col1_x%" y="%row3_y%" />
 				<font resource="font" color="%button_text_color%" />
 				<text>Android Secure</text>
 				<image resource="main_button" />
