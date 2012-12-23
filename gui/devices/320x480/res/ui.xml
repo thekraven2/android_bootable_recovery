@@ -2546,6 +2546,23 @@
 			</object>
 
 			<object type="button">
+				<placement x="%col2_x%" y="%row4_y%" />
+				<font resource="font" color="%button_text_color%" />
+				<text>Fix Recovery Boot Loop</text>
+				<image resource="main_button" />
+				<actions>
+					<action function="set">tw_back=advanced</action>
+					<action function="set">tw_action=fixloop</action>
+					<action function="set">tw_text1=Fix Recovery Boot Loop?</action>
+					<action function="set">tw_text2=This will take a few minutes.</action>
+					<action function="set">tw_action_text1=Fixing Recovery Boot Loop...</action>
+					<action function="set">tw_action_text2=This will take a few minutes.</action>
+					<action function="set">tw_complete_text1=Fix Recovery Boot Loop Complete</action>
+					<action function="set">tw_slider_text=Swipe to Confirm</action>
+					<action function="page">confirm_action</action>
+				</actions>
+			</object>
+			<object type="button">
 				<condition var1="tw_allow_partition_sdcard" var2="1" />
 				<placement x="%col1_x%" y="%row2_y%" />
 				<font resource="font" color="%button_text_color%" />
@@ -2596,14 +2613,7 @@
 				</actions>
 			</object>
 
-			<object type="button">
-				<condition var1="tw_show_dumlock" var2="1" />
-				<placement x="%col2_x%" y="%row4_y%" />
-				<font resource="font" color="%button_text_color%" />
-				<text>HTC Dumlock</text>
-				<image resource="main_button" />
-				<action function="page">htcdumlock</action>
-			</object>
+
 
 			<object type="button">
 				<condition var1="tw_has_injecttwrp" var2="1" />

@@ -20,6 +20,7 @@ include $(CLEAR_VARS)
 
 LOCAL_SRC_FILES := \
     recovery.cpp \
+	extra-functions.c \
     twbootloader.cpp \
     install.cpp \
     roots.cpp \
