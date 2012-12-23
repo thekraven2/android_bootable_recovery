@@ -35,7 +35,6 @@ extern "C" {
 #include "../minadbd/adb.h"
 
 int TWinstall_zip(const char* path, int* wipe_cache);
-void fix_loop();
 void run_script(const char *str1, const char *str2, const char *str3, const char *str4, const char *str5, const char *str6, const char *str7, int request_confirm);
 int gui_console_only();
 int gui_start();
@@ -802,19 +801,6 @@ int GUIAction::doAction(Action action, int isThreaded /* = 0 */)
 					op_status = 1; // failure
 				operation_end(op_status, simulate);
 			}
-			return 0;
-		}
-		if (function == "fixloop")
-		{
-			operation_start("Fix Recovery Boot Loop");
-            LOGI("fix recovery boot loop started!\n");
-			if (simulate) {
-				simulate_progress_bar();
-			} else
-				fix_loop();
-
-			LOGI("fix recovery boot loop DONE!\n");
-			operation_end(0, simulate);
 			return 0;
 		}
         if (function == "dd")
